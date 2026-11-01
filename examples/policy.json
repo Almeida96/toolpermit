@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "approvalTtlSeconds": 600,
+  "tools": [
+    {"name": "notes.search", "action": "ALLOW", "endpoint": "http://127.0.0.1:9000/notes/search"},
+    {
+      "name": "notes.create",
+      "action": "APPROVAL",
+      "endpoint": "http://127.0.0.1:9000/notes/create",
+      "constraints": [{"type": "one_of", "path": "/workspace", "values": ["sandbox"]}]
+    },
+    {"name": "notes.delete", "action": "DENY"}
+  ]
+}

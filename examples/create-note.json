@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "id": "note-001",
+  "tool": "notes.create",
+  "arguments": {"workspace": "sandbox", "text": "Prepare the release checklist"}
+}
