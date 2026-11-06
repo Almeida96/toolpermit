@@ -22,7 +22,7 @@ internal object Json {
 
     fun require(valid: Boolean, message: String) { if (!valid) throw InvalidInput(message) }
     fun parse(bytes: ByteArray): JsonNode {
-        try { return mapper.readTree(bytes)?.also { require(!it.isMissingNode, "JSON document is empty") } ?: throw InvalidInput("JSON document is empty") }
+        try { return mapper.readTree(bytes)?.also { require(!it.isMissingNode, "JSON document is empty"); validateUnicode(it) } ?: throw InvalidInput("JSON document is empty") }
         catch (e: InvalidInput) { throw e }
         catch (_: Exception) { throw InvalidInput("Invalid JSON document") }
     }
@@ -52,5 +52,23 @@ internal object Json {
         node.isNumber -> node.decimalValue().stripTrailingZeros().toString()
         else -> node.toString()
     }
-    fun digest(node: JsonNode): String = MessageDigest.getInstance("SHA-256").digest(canonical(node).toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+    fun digest(node: JsonNode): String {
+        // A lone surrogate would become '?' during UTF-8 encoding and could share an approval
+        // fingerprint with different arguments. Validate programmatically built nodes as well.
+        validateUnicode(node)
+        return MessageDigest.getInstance("SHA-256").digest(canonical(node).toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+    }
+    private fun validateUnicode(node: JsonNode) {
+        fun text(value: String) {
+            var index = 0
+            while (index < value.length) {
+                val char = value[index++]
+                if (char.isHighSurrogate()) require(index < value.length && value[index++].isLowSurrogate(), "Unpaired Unicode surrogate")
+                else require(!char.isLowSurrogate(), "Unpaired Unicode surrogate")
+            }
+        }
+        if (node.isTextual) text(node.textValue())
+        if (node.isObject) node.fieldNames().forEachRemaining(::text)
+        if (node.isContainerNode) node.forEach(::validateUnicode)
+    }
 }

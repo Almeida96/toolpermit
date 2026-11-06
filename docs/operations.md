@@ -34,6 +34,8 @@ Version 0.1.0 deliberately has no “reset and retry” command or automatic cra
 
 The policy is immutable within a running process. After restarting with a different policy, outstanding requests become stale when read or resubmitted. Existing completed results remain available. The database format uses SQLite `user_version` and an application identifier; unsupported newer versions and unrelated databases are rejected.
 
+JSON strings and object keys must contain valid Unicode scalar values. Escaped unpaired surrogates are rejected before persistence or fingerprinting, because UTF-8 replacement could otherwise bind different arguments to the same fingerprint. Valid supplementary characters, including emoji, are accepted; existing valid request and policy fingerprints are unchanged.
+
 ## Operator commands
 
 `pending` lists up to 100 oldest pending/approved requests and refreshes their expiration. If that batch consists of expired requests, running it again advances to the remaining records. `inspect` displays the complete arguments for a single request. `approve`/`reject` require the exact invocation fingerprint; repeated approval does not extend expiry. Approval can be rejected until the execution claim is taken.
